@@ -162,6 +162,7 @@ typedef struct Layer_s {
   AbShape *abShape;
   Vec2 pos, posLast, posNext; /* initially just set pos */
   u_int color;
+  u_char active;
   struct Layer_s *next;
 } Layer;	
 

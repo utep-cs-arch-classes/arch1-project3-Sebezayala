@@ -36,9 +36,9 @@ Layer layer4 = {
 
 Layer layer3 = {		/**< Layer with an orange circle */
   (AbShape *)&circle8,
-  {(screenWidth/2)+10, (screenHeight/2)+5}, /**< bit below & right of center */
+  {screenWidth-18, (screenHeight/2)+5}, /**< bit below & right of center */
   {0,0}, {0,0},				    /* last & next pos */
-  COLOR_VIOLET,
+  COLOR_WHITE,
   &layer4,
 };
 
@@ -47,7 +47,7 @@ Layer fieldLayer = {		/* playing field as a layer */
   (AbShape *) &fieldOutline,
   {screenWidth/2, screenHeight/2},/**< center */
   {0,0}, {0,0},				    /* last & next pos */
-  COLOR_BLACK,
+  COLOR_WHITE,
   &layer3
 };
 
@@ -78,9 +78,9 @@ typedef struct MovLayer_s {
 } MovLayer;
 
 /* initial value of {0,0} will be overwritten */
-MovLayer ml3 = { &layer3, {1,1}, 0 }; /**< not all layers move */
-MovLayer ml1 = { &layer1, {1,2}, &ml3 }; 
-MovLayer ml0 = { &layer0, {2,1}, &ml1 }; 
+MovLayer ml3 = { &layer3, {-1,4}, 0 }; /**< not all layers move */
+MovLayer ml1 = { &layer1, {-1,-2}, &ml3 }; 
+MovLayer ml0 = { &layer0, {2,0}, &ml1 }; 
 
 void movLayerDraw(MovLayer *movLayers, Layer *layers)
 {
@@ -103,17 +103,17 @@ void movLayerDraw(MovLayer *movLayers, Layer *layers)
 		bounds.botRight.axes[0], bounds.botRight.axes[1]);
     for (row = bounds.topLeft.axes[1]; row <= bounds.botRight.axes[1]; row++) {
       for (col = bounds.topLeft.axes[0]; col <= bounds.botRight.axes[0]; col++) {
-	Vec2 pixelPos = {col, row};
-	u_int color = bgColor;
-	Layer *probeLayer;
-	for (probeLayer = layers; probeLayer; 
+        Vec2 pixelPos = {col, row};
+        u_int color = bgColor;
+        Layer *probeLayer;
+        for (probeLayer = layers; probeLayer; 
 	     probeLayer = probeLayer->next) { /* probe all layers, in order */
-	  if (abShapeCheck(probeLayer->abShape, &probeLayer->pos, &pixelPos)) {
-	    color = probeLayer->color;
-	    break; 
-	  } /* if probe check */
-	} // for checking all layers at col, row
-	lcd_writeColor(color); 
+            if (abShapeCheck(probeLayer->abShape, &probeLayer->pos, &pixelPos)) {
+            color = probeLayer->color;
+            break; 
+            } /* if probe check */
+        } // for checking all layers at col, row
+        lcd_writeColor(color); 
       } // for col
     } // for row
   } // for moving layer being updated
@@ -134,21 +134,36 @@ void mlAdvance(MovLayer *ml, Region *fence)
   u_char axis;
   Region shapeBoundary;
   for (; ml; ml = ml->next) {
+      if(ml->next==0){
+        vec2Add(&newPos, &ml->layer->posNext, &ml->velocity);
+        abShapeGetBounds(ml->layer->abShape, &newPos, &shapeBoundary);
+            if ((shapeBoundary.topLeft.axes[0] < fence->topLeft.axes[0])) {
+                newPos.axes[0] = screenWidth-18;
+            }
+            if ((shapeBoundary.topLeft.axes[1] < 30) ||
+            (shapeBoundary.botRight.axes[1] > 99) ) {
+                int velocity = ml->velocity.axes[1] = -ml->velocity.axes[1];
+                newPos.axes[1] += (2*velocity);
+            }/**< if outside of fence */
+        
+          
+    }else{
     vec2Add(&newPos, &ml->layer->posNext, &ml->velocity);
     abShapeGetBounds(ml->layer->abShape, &newPos, &shapeBoundary);
     for (axis = 0; axis < 2; axis ++) {
       if ((shapeBoundary.topLeft.axes[axis] < fence->topLeft.axes[axis]) ||
 	  (shapeBoundary.botRight.axes[axis] > fence->botRight.axes[axis]) ) {
-	int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
-	newPos.axes[axis] += (2*velocity);
+        int velocity = ml->velocity.axes[axis] = -ml->velocity.axes[axis];
+        newPos.axes[axis] += (2*velocity);
       }	/**< if outside of fence */
-    } /**< for axis */
+    }
+    }/**< for axis */
     ml->layer->posNext = newPos;
   } /**< for ml */
 }
 
 
-u_int bgColor = COLOR_BLUE;     /**< The background color */
+u_int bgColor = COLOR_BLACK;     /**< The background color */
 int redrawScreen = 1;           /**< Boolean for whether screen needs to be redrawn */
 
 Region fieldFence;		/**< fence around playing field  */
@@ -165,7 +180,7 @@ void main()
   configureClocks();
   lcd_init();
   shapeInit();
-  p2sw_init(1);
+  p2sw_init(15);
 
   shapeInit();
 
@@ -194,14 +209,18 @@ void main()
 /** Watchdog timer interrupt handler. 15 interrupts/sec */
 void wdt_c_handler()
 {
+  static char stop=0;
   static short count = 0;
   P1OUT |= GREEN_LED;		      /**< Green LED on when cpu on */
-  count ++;
+  if (p2sw_read()!=15)
+    stop= !stop;
   if (count == 15) {
     mlAdvance(&ml0, &fieldFence);
-    if (p2sw_read())
-      redrawScreen = 1;
+    redrawScreen = 1;
     count = 0;
-  } 
+  }
+  if(!stop){
+      count++;
+}
   P1OUT &= ~GREEN_LED;		    /**< Green LED off when cpu off */
 }
