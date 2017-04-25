@@ -13,7 +13,7 @@ AbRect rect10 = {abRectGetBounds, abRectCheck, {10,10}};
 
 AbRectOutline fieldOutline = {	/* playing field */
   abRectOutlineGetBounds, abRectOutlineCheck,   
-  {screenWidth/2-5, screenHeight/2 - 20}
+  {screenWidth/2-2, screenHeight/2 - 20}
 };
 
 
@@ -40,7 +40,7 @@ Layer fieldLayer = {		/* playing field as a layer */
   (AbShape *) &fieldOutline,
   {screenWidth/2, screenHeight/2-15},/**< center */
   {0,0}, {0,0},				    /* last & next pos */
-  COLOR_WHITE,
+  COLOR_BLUE,
   1,
   &layer2
 };
@@ -169,7 +169,7 @@ void enemy1Advance(MovLayer *ml, Region *fence)
 }
 
 
-u_int bgColor = COLOR_BLACK;     /**< The background color */
+u_int bgColor = COLOR_BLUE;     /**< The background color */
 int redrawScreen = 1;           /**< Boolean for whether screen needs to be redrawn */
 
 Region fieldFence;		/**< fence around playing field  */
@@ -189,13 +189,12 @@ void main()
   p2sw_init(15);
 
   shapeInit();
-
+  clearScreen(COLOR_GREEN);
   layerInit(&layer0);
   layerDraw(&layer0);
 
 
   layerGetBounds(&fieldLayer, &fieldFence);
-
 
   enableWDTInterrupts();      /**< enable periodic interrupt */
   or_sr(0x8);	              /**< GIE (enable interrupts) */

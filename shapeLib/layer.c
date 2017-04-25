@@ -6,11 +6,11 @@ void
 layerDraw(Layer *layers)
 {
   int row, col;
-  for (row = 0; row < screenHeight; row++) {
+  for (row = 0; row < screenHeight-35; row++) {
     lcd_setArea(0, row, screenWidth-1, row);
     for (col = 0; col < screenWidth; col++) {
       Vec2 pixelPos = {col, row};
-      u_int color = bgColor;
+      u_int color = COLOR_BLUE;
       Layer *probeLayer;
       for (probeLayer = layers; probeLayer; probeLayer = probeLayer->next) {
 	if (abShapeCheck(probeLayer->abShape, &probeLayer->pos, &pixelPos)) {
